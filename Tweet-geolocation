@@ -1,0 +1,46 @@
+import tweepy
+import webbrowser
+from googlemaps import Client as GoogleMaps
+
+# Enter your own Twitter API credentials here
+consumer_key = 'your_consumer_key'
+consumer_secret = 'your_consumer_secret'
+access_token = 'your_access_token'
+access_token_secret = 'your_access_token_secret'
+
+# Enter the Twitter handle you want to search for here
+handle = 'elonmusk'
+
+# Authenticate with the Twitter API using Tweepy
+auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+auth.set_access_token(access_token, access_token_secret)
+api = tweepy.API(auth)
+
+# Get the user object for the specified handle
+user = api.get_user(handle)
+
+# Get the geolocation of the user's most recent tweets
+recent_tweets = api.user_timeline(screen_name=handle, count=100, include_rts=False, exclude_replies=True)
+
+geocoded_tweets = []
+for tweet in recent_tweets:
+    if tweet.coordinates:
+        geocoded_tweets.append((tweet.created_at, tweet.text, tweet.coordinates))
+
+# Display the geocoded tweets on a Google Map
+if geocoded_tweets:
+    # Get the coordinates of the user's location using the Google Maps Geocoding API
+    gmaps = GoogleMaps(api_key='your_google_maps_api_key')
+    location = gmaps.geocode(user.location)[0]['geometry']['location']
+
+    # Create a map centered on the user's location
+    map_url = f'https://www.google.com/maps/embed/v1/view?key=your_google_maps_api_key&center={location["lat"]},{location["lng"]}&zoom=10'
+
+    # Add markers for each geocoded tweet to the map URL
+    for tweet in geocoded_tweets:
+        map_url += f'&markers=color:red|label:{tweet[1][0]}|{tweet[2]["coordinates"][1]},{tweet[2]["coordinates"][0]}'
+
+    # Open the map in a web browser
+    webbrowser.open(map_url)
+else:
+    print("No geocoded tweets found for this user.")
